@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工作日报汇总</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --primary-light: #e8f0fe;
+            --success: #34a853;
+            --warning: #fbbc04;
+            --danger: #ea4335;
+            --text-primary: #202124;
+            --text-secondary: #5f6368;
+            --bg-main: #f8f9fa;
+            --bg-card: #ffffff;
+            --border: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* 加载动画 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.3s;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+            color: white;
+            padding: 20px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 12px rgba(26, 115, 232, 0.3);
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .dept-name {
+            font-size: 14px;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .history-btn {
+            font-size: 13px;
+            background: rgba(255,255,255,0.2);
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: none;
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .history-btn:active {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+
+        .date-nav {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 12px;
+            border-radius: 10px;
+        }
+
+        .date-nav button {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .date-nav button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .current-date {
+            flex: 1;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .stat-item {
+            background: rgba(255,255,255,0.15);
+            padding: 10px 12px;
+            border-radius: 10px;
+            flex: 1;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-num {
+            font-size: 22px;
+            font-weight: 700;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            opacity: 0.85;
+        }
+
+        .container {
+            padding: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin: 16px 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 3px;
+            height: 14px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        .member-card {
+            background: var(--bg-card);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+            animation: fadeInUp 0.4s ease-out backwards;
+        }
+
+        .member-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            color: white;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+
+        .member-info {
+            flex: 1;
+        }
+
+        .member-name {
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .member-role {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .work-status {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        .status-done { background: #e6f4ea; color: var(--success); }
+        .status-progress { background: #fef7e0; color: #b06000; }
+        .status-blocked { background: #fce8e6; color: var(--danger); }
+
+        .work-list {
+            background: var(--bg-main);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .work-item {
+            display: flex;
+            gap: 8px;
+            padding: 6px 0;
+            border-bottom: 1px dashed var(--border);
+        }
+
+        .work-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .work-item:first-child { padding-top: 0; }
+
+        .work-icon {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .icon-done { background: var(--success); color: white; }
+        .icon-progress { background: var(--warning); color: white; }
+
+        .work-content {
+            flex: 1;
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        .work-tag {
+            font-size: 10px;
+            color: var(--primary);
+            background: var(--primary-light);
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-top: 3px;
+            display: inline-block;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
+            border-radius: 14px;
+            padding: 16px;
+            margin-top: 16px;
+            border: 1px solid #ffe082;
+        }
+
+        .summary-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #b06000;
+            margin-bottom: 10px;
+        }
+
+        .summary-content {
+            font-size: 13px;
+            color: #805600;
+            line-height: 1.8;
+        }
+
+        .summary-item {
+            margin-bottom: 6px;
+            padding-left: 14px;
+            position: relative;
+        }
+
+        .summary-item::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #b06000;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 11px;
+        }
+
+        /* 历史记录弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px 20px 0 0;
+            width: 100%;
+            max-width: 600px;
+            max-height: 70vh;
+            overflow: hidden;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0 8px;
+        }
+
+        .modal-body {
+            padding: 16px;
+            overflow-y: auto;
+            max-height: calc(70vh - 60px);
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            padding: 14px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            background: var(--bg-main);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .history-item:active {
+            background: var(--border);
+        }
+
+        .history-date {
+            flex: 1;
+        }
+
+        .history-date strong {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .history-date span {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .history-arrow {
+            color: var(--text-secondary);
+            font-size: 18px;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- 加载动画 -->
+    <div class="loading-overlay" id="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <header class="header">
+        <div class="header-top">
+            <span class="dept-name" id="deptName">🏢 加载中...</span>
+            <button class="history-btn" onclick="showHistory()">📅 历史记录</button>
+        </div>
+        <h1>工作日报汇总</h1>
+        <div class="date-nav">
+            <button onclick="prevDay()" id="prevBtn">‹</button>
+            <span class="current-date" id="currentDate">--</span>
+            <button onclick="nextDay()" id="nextBtn">›</button>
+        </div>
+        <div class="stats-row">
+            <div class="stat-item">
+                <span class="stat-num" id="statPeople">-</span>
+                <span class="stat-label">今日人数</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-num" id="statDone">-</span>
+                <span class="stat-label">完成任务</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-num" id="statProgress">-</span>
+                <span class="stat-label">进行中</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="section-title">成员工作详情</div>
+        <div id="memberList"></div>
+
+        <div class="summary-card" id="summaryCard" style="display: none;">
+            <div class="summary-title">📋 今日总结</div>
+            <div class="summary-content" id="summaryContent"></div>
+        </div>
+
+        <div class="footer">
+            <div>工作汇总系统</div>
+            <div id="updateTime">--</div>
+        </div>
+    </div>
+
+    <!-- 历史记录弹窗 -->
+    <div class="modal-overlay" id="historyModal" onclick="hideHistory()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>📅 历史记录</h2>
+                <button class="modal-close" onclick="hideHistory()">×</button>
+            </div>
+            <div class="modal-body" id="historyList"></div>
+        </div>
+    </div>
+
+    <script>
+        // ========== LeanCloud 配置 ==========
+        // 请替换为你的 LeanCloud 应用信息
+        const LC_CONFIG = {
+            appId: 'YOUR_APP_ID',           // 替换为你的 App ID
+            appKey: 'YOUR_APP_KEY',         // 替换为你的 App Key
+            serverURL: 'https://xxx.lc-cn-n1-shared.com'  // 替换为你的 API 地址
+        };
+
+        // ========== 全局变量 ==========
+        let allReports = [];
+        let currentIndex = 0;
+
+        // ========== 颜色配置 ==========
+        const avatarColors = [
+            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+            'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+            'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+            'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+            'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'
+        ];
+
+        // ========== LeanCloud API 请求 ==========
+        async function lcRequest(endpoint, method = 'GET', body = null) {
+            const headers = {
+                'X-LC-Id': LC_CONFIG.appId,
+                'X-LC-Key': LC_CONFIG.appKey,
+                'Content-Type': 'application/json'
+            };
+
+            const options = { method, headers };
+            if (body) options.body = JSON.stringify(body);
+
+            const response = await fetch(`${LC_CONFIG.serverURL}/1.1${endpoint}`, options);
+            return response.json();
+        }
+
+        // ========== 加载数据 ==========
+        async function loadReports() {
+            try {
+                // 获取最近30天的报告，按日期倒序
+                const result = await lcRequest('/classes/DailyReport?order=-reportDate&limit=30');
+                allReports = result.results || [];
+                
+                if (allReports.length > 0) {
+                    currentIndex = 0;
+                    renderReport(allReports[0]);
+                    updateNavButtons();
+                } else {
+                    showEmpty();
+                }
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                showEmpty('加载失败，请刷新重试');
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+
+        // ========== 渲染报告 ==========
+        function renderReport(report) {
+            // 更新部门名称
+            document.getElementById('deptName').textContent = `🏢 ${report.deptName || '技术部'}`;
+            
+            // 更新日期
+            const date = new Date(report.reportDate);
+            const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            document.getElementById('currentDate').textContent = 
+                `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${weekDays[date.getDay()]}`;
+
+            // 计算统计数据
+            const members = report.members || [];
+            let doneCount = 0;
+            let progressCount = 0;
+            
+            members.forEach(m => {
+                (m.tasks || []).forEach(t => {
+                    if (t.status === 'done') doneCount++;
+                    else progressCount++;
+                });
+            });
+
+            document.getElementById('statPeople').textContent = members.length;
+            document.getElementById('statDone').textContent = doneCount;
+            document.getElementById('statProgress').textContent = progressCount;
+
+            // 渲染成员列表
+            const memberList = document.getElementById('memberList');
+            memberList.innerHTML = members.map((member, index) => {
+                const tasks = member.tasks || [];
+                const allDone = tasks.every(t => t.status === 'done');
+                const hasBlocked = tasks.some(t => t.status === 'blocked');
+                
+                let statusClass = 'status-progress';
+                let statusText = '进行中';
+                if (allDone && tasks.length > 0) {
+                    statusClass = 'status-done';
+                    statusText = '已完成';
+                } else if (hasBlocked) {
+                    statusClass = 'status-blocked';
+                    statusText = '待处理';
+                }
+
+                return `
+                    <div class="member-card" style="animation-delay: ${index * 0.1}s">
+                        <div class="member-header">
+                            <div class="avatar" style="background: ${avatarColors[index % avatarColors.length]}">${member.name.charAt(0)}</div>
+                            <div class="member-info">
+                                <div class="member-name">${member.name}</div>
+                                <div class="member-role">${member.role || ''}</div>
+                            </div>
+                            <span class="work-status ${statusClass}">${statusText}</span>
+                        </div>
+                        <div class="work-list">
+                            ${tasks.map(task => `
+                                <div class="work-item">
+                                    <span class="work-icon ${task.status === 'done' ? 'icon-done' : 'icon-progress'}">${task.status === 'done' ? '✓' : '⋯'}</span>
+                                    <div class="work-content">
+                                        ${task.content}
+                                        ${task.tag ? `<div class="work-tag">${task.tag}</div>` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // 渲染总结
+            if (report.summary && report.summary.length > 0) {
+                document.getElementById('summaryCard').style.display = 'block';
+                document.getElementById('summaryContent').innerHTML = 
+                    report.summary.map(s => `<div class="summary-item">${s}</div>`).join('');
+            } else {
+                document.getElementById('summaryCard').style.display = 'none';
+            }
+
+            // 更新时间
+            document.getElementById('updateTime').textContent = 
+                `数据更新: ${report.updatedAt ? new Date(report.updatedAt).toLocaleString('zh-CN') : '--'}`;
+        }
+
+        // ========== 空状态 ==========
+        function showEmpty(message = '暂无工作记录') {
+            document.getElementById('memberList').innerHTML = `
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <div>${message}</div>
+                </div>
+            `;
+            document.getElementById('summaryCard').style.display = 'none';
+        }
+
+        // ========== 日期导航 ==========
+        function prevDay() {
+            if (currentIndex < allReports.length - 1) {
+                currentIndex++;
+                renderReport(allReports[currentIndex]);
+                updateNavButtons();
+            }
+        }
+
+        function nextDay() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                renderReport(allReports[currentIndex]);
+                updateNavButtons();
+            }
+        }
+
+        function updateNavButtons() {
+            document.getElementById('prevBtn').disabled = currentIndex >= allReports.length - 1;
+            document.getElementById('nextBtn').disabled = currentIndex <= 0;
+        }
+
+        // ========== 历史记录弹窗 ==========
+        function showHistory() {
+            const historyList = document.getElementById('historyList');
+            const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            
+            historyList.innerHTML = allReports.map((report, index) => {
+                const date = new Date(report.reportDate);
+                const memberCount = (report.members || []).length;
+                let taskCount = 0;
+                (report.members || []).forEach(m => taskCount += (m.tasks || []).length);
+                
+                return `
+                    <div class="history-item" onclick="goToDate(${index})">
+                        <div class="history-date">
+                            <strong>${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${weekDays[date.getDay()]}</strong>
+                            <span>${memberCount}人 · ${taskCount}条记录</span>
+                        </div>
+                        <span class="history-arrow">›</span>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('historyModal').classList.add('show');
+        }
+
+        function hideHistory() {
+            document.getElementById('historyModal').classList.remove('show');
+        }
+
+        function goToDate(index) {
+            currentIndex = index;
+            renderReport(allReports[index]);
+            updateNavButtons();
+            hideHistory();
+        }
+
+        // ========== 初始化 ==========
+        document.addEventListener('DOMContentLoaded', loadReports);
+    </script>
+</body>
+</html>
