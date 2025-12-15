@@ -354,6 +354,37 @@
             opacity: 0.5;
         }
 
+        /* 无数据状态样式 */
+        .no-data-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-secondary);
+        }
+
+        .no-data-state .no-data-icon {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        .no-data-state .no-data-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .no-data-state .no-data-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
         .footer {
             text-align: center;
             padding: 20px;
@@ -435,6 +466,14 @@
 
         .history-item:active {
             background: var(--border);
+        }
+
+        .history-item.no-data {
+            opacity: 0.6;
+        }
+
+        .history-item.no-data .history-date span {
+            color: var(--danger);
         }
 
         .history-date {
@@ -594,8 +633,17 @@
             document.getElementById('currentDate').textContent = 
                 `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${weekDays[date.getDay()]}`;
 
-            // 计算统计数据
+            // 获取成员列表
             const members = report.members || [];
+            
+            // ========== 关键修改：检查是否有数据 ==========
+            // 如果members为空数组，或者report.noData为true，显示当天无数据
+            if (members.length === 0 || report.noData === true) {
+                showNoData(report);
+                return;
+            }
+
+            // 计算统计数据
             let doneCount = 0;
             let progressCount = 0;
             
@@ -667,7 +715,27 @@
                 `数据更新: ${report.updatedAt ? new Date(report.updatedAt).toLocaleString('zh-CN') : '--'}`;
         }
 
-        // ========== 空状态 ==========
+        // ========== 无数据状态（当天无日报记录） ==========
+        function showNoData(report) {
+            document.getElementById('statPeople').textContent = '0';
+            document.getElementById('statDone').textContent = '0';
+            document.getElementById('statProgress').textContent = '0';
+            
+            document.getElementById('memberList').innerHTML = `
+                <div class="no-data-state">
+                    <div class="no-data-icon">📭</div>
+                    <div class="no-data-title">当天无数据</div>
+                    <div class="no-data-desc">${report.message || '当天没有符合条件的日报记录'}</div>
+                </div>
+            `;
+            document.getElementById('summaryCard').style.display = 'none';
+            
+            // 更新时间
+            document.getElementById('updateTime').textContent = 
+                `数据更新: ${report.updatedAt ? new Date(report.updatedAt).toLocaleString('zh-CN') : '--'}`;
+        }
+
+        // ========== 空状态（没有任何报告数据） ==========
         function showEmpty(message = '暂无工作记录') {
             document.getElementById('memberList').innerHTML = `
                 <div class="empty-state">
@@ -709,15 +777,18 @@
             
             historyList.innerHTML = allReports.map((report, index) => {
                 const date = new Date(report.reportDate);
-                const memberCount = (report.members || []).length;
+                const members = report.members || [];
+                const memberCount = members.length;
+                const isNoData = memberCount === 0 || report.noData === true;
+                
                 let taskCount = 0;
-                (report.members || []).forEach(m => taskCount += (m.tasks || []).length);
+                members.forEach(m => taskCount += (m.tasks || []).length);
                 
                 return `
-                    <div class="history-item" onclick="goToDate(${index})">
+                    <div class="history-item ${isNoData ? 'no-data' : ''}" onclick="goToDate(${index})">
                         <div class="history-date">
                             <strong>${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${weekDays[date.getDay()]}</strong>
-                            <span>${memberCount}人 · ${taskCount}条记录</span>
+                            <span>${isNoData ? '当天无数据' : `${memberCount}人 · ${taskCount}条记录`}</span>
                         </div>
                         <span class="history-arrow">›</span>
                     </div>
