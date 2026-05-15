@@ -42,12 +42,13 @@ async function loginYunzhijia() {
     const res = await fetch('https://www.yunzhijia.com/space/c/rest/user/v2/login', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
             'Origin': 'https://www.yunzhijia.com',
-            'Referer': 'https://www.yunzhijia.com/'
+            'Referer': 'https://www.yunzhijia.com/',
+            'x-requested-with': 'XMLHttpRequest'
         },
-        body: `account=${YZJ_ACCOUNT}&password=${YZJ_PASSWORD}`
+        body: `email=${encodeURIComponent(YZJ_ACCOUNT)}&password=${encodeURIComponent(YZJ_PASSWORD)}&remember=false&forceToNetwork=false`
     });
 
     const text = await res.text();
