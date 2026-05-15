@@ -41,11 +41,23 @@ async function loginYunzhijia() {
     console.log('正在登录云之家...');
     const res = await fetch('https://www.yunzhijia.com/space/c/rest/user/v2/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+            'Origin': 'https://www.yunzhijia.com',
+            'Referer': 'https://www.yunzhijia.com/'
+        },
         body: `account=${YZJ_ACCOUNT}&password=${YZJ_PASSWORD}`
     });
 
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try {
+        data = JSON.parse(text);
+    } catch (e) {
+        throw new Error(`云之家登录返回非JSON: ${text.substring(0, 200)}`);
+    }
+
     if (!data.success) {
         throw new Error(`云之家登录失败: ${data.errorMessage || JSON.stringify(data)}`);
     }
@@ -58,7 +70,7 @@ async function loginYunzhijia() {
     const token = data.data?.token || '';
 
     console.log('云之家登录成功');
-    return { cookieStr, token, headers: Object.fromEntries(res.headers.entries()) };
+    return { cookieStr, token };
 }
 
 // ========== 第二步：拉取日报数据 ==========
@@ -77,7 +89,9 @@ async function fetchDailyReports(cookieStr, token) {
 
     const headers = {
         'Cookie': cookieStr,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+        'Referer': 'https://www.yunzhijia.com/'
     };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
