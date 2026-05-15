@@ -196,9 +196,9 @@ async function notifyFeishu(success, dateStr, detail) {
     let content;
     if (success) {
         const names = detail.names || [];
-        content = `✅ 日报同步成功\n📅 日期：${dateStr}\n👥 写入 ${detail.memberCount} 人数据\n📝 成员：${names.join('、') || '无'}`;
+        content = `✅ 云之家日报同步成功\n📅 日期：${dateStr}\n👥 写入 ${detail.memberCount} 人数据\n📝 成员：${names.join('、') || '无'}`;
     } else {
-        content = `❌ 日报同步失败\n📅 日期：${dateStr}\n⚠️ 错误：${detail.error}\n🔗 请检查 GitHub Actions 日志`;
+        content = `❌ 云之家日报同步失败\n📅 日期：${dateStr}\n⚠️ 错误：${detail.error}\n🔗 请检查 GitHub Actions 日志`;
     }
 
     await fetch(FEISHU_WEBHOOK, {
