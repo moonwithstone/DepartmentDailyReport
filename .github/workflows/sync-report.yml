@@ -1,0 +1,28 @@
+name: 同步日报数据
+
+on:
+  schedule:
+    # 每天北京时间 8:15 运行（UTC 0:15）
+    - cron: '15 0 * * *'
+  workflow_dispatch:  # 支持手动触发（方便测试）
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run sync script
+        env:
+          YZJ_ACCOUNT: ${{ secrets.YZJ_ACCOUNT }}
+          YZJ_PASSWORD: ${{ secrets.YZJ_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+        run: node scripts/sync-daily-report.js
