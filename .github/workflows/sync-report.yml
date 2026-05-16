@@ -1,11 +1,11 @@
 name: 同步日报数据
 
 on:
-  # schedule:
-  #   # 每天北京时间 8:15 运行（UTC 0:15）
-  #   # 已停用：GitHub Actions定时任务延迟严重，改用腾讯云函数
-  #   - cron: '15 0 * * *'
-  workflow_dispatch:  # 仅保留手动触发（备用）
+  schedule:
+    # 每天北京时间 7:37 运行（UTC 23:37）
+    # 选 :37 避开整点常用分钟数（0/15/30/45）减轻排队延迟
+    - cron: '37 23 * * *'
+  workflow_dispatch:  # 支持手动触发（方便测试）
 
 jobs:
   sync:
